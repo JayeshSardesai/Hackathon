@@ -1516,11 +1516,11 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
         let state = req.query.state;
         let district = req.query.district;
         let userLocation = null;
-        
+
         if (req.query.lat && req.query.lng) {
-            userLocation = { 
-                lat: parseFloat(req.query.lat), 
-                lng: parseFloat(req.query.lng) 
+            userLocation = {
+                lat: parseFloat(req.query.lat),
+                lng: parseFloat(req.query.lng)
             };
         }
 
@@ -1528,7 +1528,7 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
         if (!state || !district) {
             try {
                 const userProfile = await User.findById(req.user.userId);
-                if (userProfile && userProfile.dashboardLocation && 
+                if (userProfile && userProfile.dashboardLocation &&
                     userProfile.dashboardLocation.state && userProfile.dashboardLocation.district) {
                     state = userProfile.dashboardLocation.state;
                     district = userProfile.dashboardLocation.district;
@@ -1536,68 +1536,68 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
                     console.log(`📍 Using stored dashboard location: ${district}, ${state}`);
                 } else {
                     console.log('📡 No stored location found, attempting fresh location detection...');
-                
-                // Fallback: Try to get fresh location using Google API
-                const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-                const GEOCODING_API_KEY = process.env.GOOGLE_API_KEY; // Use same key for geocoding
-                
-                if (GOOGLE_API_KEY) {
-                    try {
-                        console.log('📡 Getting fresh location for crop details...');
-                        
-                        // Get coordinates using geolocation API
-                        const geoPayload = { considerIp: true };
-                        const geoResp = await axios.post(`https://www.googleapis.com/geolocation/v1/geolocate?key=${GOOGLE_API_KEY}`, geoPayload, {
-                            timeout: 10000
-                        });
-                        const { lat, lng } = geoResp.data.location;
-                        userLocation = { lat, lng };
-                        
-                        // Get address using geocoding API
-                        const revResp = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=en&key=${GEOCODING_API_KEY}`, {
-                            timeout: 10000
-                        });
-                        
-                        if (revResp.data.status === 'OK' && revResp.data.results.length > 0) {
-                            const components = revResp.data.results[0].address_components;
-                            const findType = t => components.find(c => c.types.includes(t))?.long_name || '';
-                            district = findType('administrative_area_level_2') || findType('locality') || findType('sublocality');
-                            state = findType('administrative_area_level_1');
-                            
-                            console.log(`📍 Fresh location detected: ${district}, ${state} (${lat}, ${lng})`);
-                            
-                            // Store this location for future use
-                            try {
-                                await User.findByIdAndUpdate(req.user.userId, {
-                                    dashboardLocation: {
-                                        state,
-                                        district,
-                                        coordinates: { lat, lng },
-                                        lastUpdated: new Date(),
-                                        method: 'crop-details-fallback'
-                                    }
-                                });
-                                console.log('✅ Stored fresh location for future use');
-                            } catch (storeErr) {
-                                console.warn('⚠️ Failed to store fresh location:', storeErr.message);
+
+                    // Fallback: Try to get fresh location using Google API
+                    const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+                    const GEOCODING_API_KEY = process.env.GOOGLE_API_KEY; // Use same key for geocoding
+
+                    if (GOOGLE_API_KEY) {
+                        try {
+                            console.log('📡 Getting fresh location for crop details...');
+
+                            // Get coordinates using geolocation API
+                            const geoPayload = { considerIp: true };
+                            const geoResp = await axios.post(`https://www.googleapis.com/geolocation/v1/geolocate?key=${GOOGLE_API_KEY}`, geoPayload, {
+                                timeout: 10000
+                            });
+                            const { lat, lng } = geoResp.data.location;
+                            userLocation = { lat, lng };
+
+                            // Get address using geocoding API
+                            const revResp = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=en&key=${GEOCODING_API_KEY}`, {
+                                timeout: 10000
+                            });
+
+                            if (revResp.data.status === 'OK' && revResp.data.results.length > 0) {
+                                const components = revResp.data.results[0].address_components;
+                                const findType = t => components.find(c => c.types.includes(t))?.long_name || '';
+                                district = findType('administrative_area_level_2') || findType('locality') || findType('sublocality');
+                                state = findType('administrative_area_level_1');
+
+                                console.log(`📍 Fresh location detected: ${district}, ${state} (${lat}, ${lng})`);
+
+                                // Store this location for future use
+                                try {
+                                    await User.findByIdAndUpdate(req.user.userId, {
+                                        dashboardLocation: {
+                                            state,
+                                            district,
+                                            coordinates: { lat, lng },
+                                            lastUpdated: new Date(),
+                                            method: 'crop-details-fallback'
+                                        }
+                                    });
+                                    console.log('✅ Stored fresh location for future use');
+                                } catch (storeErr) {
+                                    console.warn('⚠️ Failed to store fresh location:', storeErr.message);
+                                }
+                            } else {
+                                throw new Error('Geocoding failed');
                             }
-                        } else {
-                            throw new Error('Geocoding failed');
+                        } catch (apiErr) {
+                            console.warn('⚠️ Fresh location detection failed:', apiErr.message);
+                            console.log('🔄 Using fallback location');
+                            state = 'Karnataka';
+                            district = 'Bangalore Urban';
+                            userLocation = { lat: 12.9716, lng: 77.5946 };
                         }
-                    } catch (apiErr) {
-                        console.warn('⚠️ Fresh location detection failed:', apiErr.message);
-                        console.log('🔄 Using fallback location');
+                    } else {
+                        console.warn('⚠️ Google API key not configured, using fallback location');
                         state = 'Karnataka';
                         district = 'Bangalore Urban';
                         userLocation = { lat: 12.9716, lng: 77.5946 };
                     }
-                } else {
-                    console.warn('⚠️ Google API key not configured, using fallback location');
-                    state = 'Karnataka';
-                    district = 'Bangalore Urban';
-                    userLocation = { lat: 12.9716, lng: 77.5946 };
                 }
-            }
             } catch (err) {
                 console.error('❌ Database error getting user profile:', err.message);
                 // Use fallback location even if database fails
@@ -1641,13 +1641,13 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
                     'belgaum': 'belgaum',
                     'bagalkot': 'bagalkot'
                 };
-                
+
                 let mappedDistrictKey = districtKey.replace(/\s+/g, '_');
                 if (districtMapping[mappedDistrictKey]) {
                     console.log(`🔄 Mapping district: ${mappedDistrictKey} -> ${districtMapping[mappedDistrictKey]}`);
                     mappedDistrictKey = districtMapping[mappedDistrictKey];
                 }
-                
+
                 // First try district-specific data
                 thresholdData = processedCycles?.[stateKey]?.districts?.[mappedDistrictKey]?.[seasonKey]?.[cropKey];
 
@@ -1655,7 +1655,7 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
                     console.log('✅ Found district-specific threshold data for crop');
                 } else {
                     console.log('⚠️ District data not found, checking surrounding districts...');
-                    
+
                     // Define surrounding districts for major regions (simplified approach)
                     const surroundingDistricts = {
                         'mysore division': ['mandya', 'hassan', 'chamarajanagar', 'kodagu'],
@@ -1664,11 +1664,11 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
                         'bagalkot': ['belagavi', 'bijapur', 'gadag', 'dharwad'],
                         'mandya': ['mysore division', 'hassan', 'ramanagara', 'tumkur']
                     };
-                    
+
                     // Check surrounding districts first
                     const currentDistrictKey = districtKey.replace(/\s+/g, ' ');
                     const nearbyDistricts = surroundingDistricts[currentDistrictKey] || [];
-                    
+
                     for (const nearbyDistrict of nearbyDistricts) {
                         const nearbyKey = nearbyDistrict.toLowerCase().replace(/\s+/g, ' ');
                         const nearbyData = processedCycles?.[stateKey]?.districts?.[nearbyKey]?.[seasonKey]?.[cropKey];
@@ -1678,7 +1678,7 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
                             break;
                         }
                     }
-                    
+
                     // If no nearby district data, fallback to any district in the state
                     if (!thresholdData) {
                         console.log('⚠️ No nearby district data found, checking state-level data...');
@@ -1694,7 +1694,7 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
                             }
                         }
                     }
-                    
+
                     if (!thresholdData) {
                         console.log('⚠️ No threshold data found for this crop in any location');
                     }
@@ -1867,15 +1867,15 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
             // Get max and avg production for current cycle from processed_cycles.json (use raw values)
             const cycleKey = `cycle_${currentCycle}`;
             const cycleData = thresholdData.standard_cycles?.[cycleKey];
-            
+
             // Use actual values from processed_cycles.json without any fallback to 0.1
             maxCycleProduction = cycleData?.max_production || 0;
             avgCycleProduction = cycleData?.avg_production || 0;
             seasonMaxProduction = thresholdData.season_total?.production || 0;
-            
+
             // Set threshold as 70% of max production capacity (more realistic)
             threshold = maxCycleProduction * 0.7;
-            
+
             console.log(`✅ Threshold data found - Max: ${maxCycleProduction}, Avg: ${avgCycleProduction}, Threshold: ${threshold}`);
 
             // Calculate state-wise threshold by summing all districts in the state for this crop
@@ -1928,7 +1928,7 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
 
         // Get stored dashboard location coordinates for map display or use fresh location
         let mapCoordinates = userLocation || null;
-        
+
         if (!mapCoordinates) {
             try {
                 const userProfile = await User.findById(req.user.userId);
@@ -2028,10 +2028,10 @@ app.get('/api/crop-details/:cropName', authenticateToken, async (req, res) => {
 app.get('/api/locations', authenticateToken, async (req, res) => {
     try {
         console.log('🔍 Getting states and districts for dropdown');
-        
+
         const path = require('path');
         const processedCyclesPath = path.join(__dirname, '../landing/processed_cycles.json');
-        
+
         if (!fs.existsSync(processedCyclesPath)) {
             return res.status(404).json({
                 error: 'Location data not found'
@@ -2039,28 +2039,28 @@ app.get('/api/locations', authenticateToken, async (req, res) => {
         }
 
         const processedCycles = JSON.parse(fs.readFileSync(processedCyclesPath, 'utf8'));
-        
+
         // Extract states and districts from processed_cycles.json
         const states = [];
         const districtsByState = {};
-        
+
         for (const [stateName, stateData] of Object.entries(processedCycles)) {
             if (stateData?.districts) {
                 states.push(stateName);
                 districtsByState[stateName] = [];
-                
+
                 for (const [districtName, districtData] of Object.entries(stateData.districts)) {
                     districtsByState[stateName].push(districtName);
                 }
             }
         }
-        
+
         res.json({
             success: true,
             states: states.sort(),
             districtsByState: districtsByState
         });
-        
+
     } catch (err) {
         console.error('❌ Failed to get locations:', err);
         res.status(500).json({
@@ -2127,9 +2127,9 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
     try {
         const { lat, lng, cropName } = req.params;
         const crop = cropName.toLowerCase();
-        
+
         console.log(`🗺️ Getting region data for: ${lat}, ${lng} - Crop: ${crop}`);
-        
+
         const latitude = parseFloat(lat);
         const longitude = parseFloat(lng);
 
@@ -2147,26 +2147,26 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
                 error: 'Google Maps API key not configured'
             });
         }
-        
+
         // Get location details for clicked coordinates
         const revResp = await axios.get(
             `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=en&key=${GOOGLE_MAPS_API_KEY}`
         );
-        
+
         let clickedDistrict = 'Unknown', clickedState = 'Unknown', actualLocationName = 'Unknown Location', specificLocation = 'Unknown';
         if (revResp.data.status === 'OK' && revResp.data.results.length > 0) {
             const components = revResp.data.results[0].address_components;
             const findType = t => components.find(c => c.types.includes(t))?.long_name || '';
-            
+
             // Get the most specific location name for popup display
             actualLocationName = revResp.data.results[0].formatted_address;
-            
+
             // Extract specific city/locality for popup (like Mandya, Mysuru)
             specificLocation = findType('locality') || findType('sublocality_level_1') || findType('administrative_area_level_3') || findType('administrative_area_level_2');
-            
+
             clickedDistrict = findType('administrative_area_level_2') || findType('locality') || findType('sublocality');
             clickedState = findType('administrative_area_level_1');
-            
+
             console.log(`🌍 Geocoding API Response:`, {
                 status: revResp.data.status,
                 formatted_address: actualLocationName,
@@ -2177,21 +2177,21 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
         } else {
             console.log(`❌ Geocoding API failed:`, revResp.data.status, revResp.data.error_message);
         }
-        
+
         console.log(`📍 Clicked location: ${clickedDistrict}, ${clickedState}`);
-        
+
         // Load processed_cycles.json for threshold data
         let thresholdData = null;
         try {
             const processedCyclesPath = path.join(__dirname, '../landing/processed_cycles.json');
             if (fs.existsSync(processedCyclesPath)) {
                 const processedCycles = JSON.parse(fs.readFileSync(processedCyclesPath, 'utf8'));
-                
+
                 // Look for threshold data in clicked location
                 const stateKey = String(clickedState).toLowerCase().replace(/\s+/g, '_');
                 let districtKey = String(clickedDistrict).toLowerCase().replace(/\s+/g, '_');
                 const currentSeason = determineSeason().toLowerCase();
-                
+
                 // Apply district name mapping for consistency with crop details page
                 const districtMapping = {
                     'mysore_division': 'mysore',
@@ -2203,26 +2203,26 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
                     'belgaum': 'belgaum',
                     'bagalkot': 'bagalkot'
                 };
-                
+
                 if (districtMapping[districtKey]) {
                     console.log(`🔄 Mapping district: ${districtKey} -> ${districtMapping[districtKey]}`);
                     districtKey = districtMapping[districtKey];
                 }
-                
+
                 thresholdData = processedCycles?.[stateKey]?.districts?.[districtKey]?.[currentSeason]?.[crop];
-                
+
                 console.log(`🔍 Looking for threshold data: ${stateKey}.districts.${districtKey}.${currentSeason}.${crop}`);
                 console.log(`📊 Threshold data found: ${!!thresholdData}`);
-                
+
                 // If not found in exact location, implement intelligent fallback
                 if (!thresholdData) {
                     console.log(`🔄 Implementing intelligent fallback for ${crop} in ${clickedDistrict}, ${clickedState}`);
-                    
+
                     // Step 1: Try other districts in the same state
                     if (processedCycles[stateKey]?.districts) {
                         const availableDistricts = Object.keys(processedCycles[stateKey].districts);
                         console.log(`🔍 Searching ${availableDistricts.length} districts in ${clickedState}`);
-                        
+
                         for (const fallbackDistrict of availableDistricts) {
                             const fallbackData = processedCycles[stateKey].districts[fallbackDistrict]?.[currentSeason]?.[crop];
                             if (fallbackData) {
@@ -2232,15 +2232,15 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
                             }
                         }
                     }
-                    
+
                     // Step 2: Try other states if still not found
                     if (!thresholdData) {
                         console.log(`🔄 Searching other states for ${crop} data`);
                         const allStates = Object.keys(processedCycles);
-                        
+
                         for (const fallbackState of allStates) {
                             if (fallbackState === stateKey) continue; // Skip current state
-                            
+
                             const stateDistricts = processedCycles[fallbackState]?.districts;
                             if (stateDistricts) {
                                 for (const fallbackDistrict of Object.keys(stateDistricts)) {
@@ -2255,7 +2255,7 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
                             }
                         }
                     }
-                    
+
                     // Step 3: Generate dynamic threshold if still not found
                     if (!thresholdData) {
                         console.log(`🔧 Generating dynamic threshold for ${crop}`);
@@ -2270,17 +2270,17 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
                         console.log(`✅ Generated dynamic threshold data for ${crop}`);
                     }
                 }
-                
+
                 // If not found, log available districts and crops for debugging
                 if (!thresholdData && processedCycles?.[stateKey]?.districts) {
                     const availableDistricts = Object.keys(processedCycles[stateKey].districts);
                     console.log(`🔍 Available districts in ${stateKey}:`, availableDistricts.slice(0, 10));
-                    
+
                     // Check if the mapped district exists and what crops it has
                     if (processedCycles[stateKey].districts[districtKey]) {
                         const districtSeasons = Object.keys(processedCycles[stateKey].districts[districtKey]);
                         console.log(`🔍 Available seasons in ${districtKey}:`, districtSeasons);
-                        
+
                         if (processedCycles[stateKey].districts[districtKey][currentSeason]) {
                             const districtCrops = Object.keys(processedCycles[stateKey].districts[districtKey][currentSeason]);
                             console.log(`🔍 Available crops in ${districtKey}.${currentSeason}:`, districtCrops);
@@ -2291,10 +2291,10 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
         } catch (err) {
             console.warn('Failed to load threshold data:', err.message);
         }
-        
+
         const currentSeason = determineSeason();
         const currentCycle = await determineCycle(crop, clickedDistrict, clickedState, currentSeason);
-        
+
         // Ensure districtKey is available outside the try block
         let mappedDistrictKey = String(clickedDistrict).toLowerCase().replace(/\s+/g, '_');
         const districtMapping = {
@@ -2307,11 +2307,11 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
             'belgaum': 'belgaum',
             'bagalkot': 'bagalkot'
         };
-        
+
         if (districtMapping[mappedDistrictKey]) {
             mappedDistrictKey = districtMapping[mappedDistrictKey];
         }
-        
+
         // Get farmer production data for clicked location using mapped district
         console.log(`🔍 Querying farmer data with: district=${clickedDistrict}, mapped=${mappedDistrictKey}`);
         const farmerProduction = await UserSelection.aggregate([
@@ -2332,7 +2332,7 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
                 }
             }
         ]);
-        
+
         // Get region production data
         const regionProduction = await RegionProduction.aggregate([
             {
@@ -2351,24 +2351,24 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
                 }
             }
         ]);
-        
+
         // Calculate threshold and production data using same logic as crop details page
         let threshold = 0.1;
         let maxProduction = 0.1;
-        
+
         console.log(`🔍 Processing threshold data: ${!!thresholdData}`);
         if (thresholdData) {
             const cycleKey = `cycle_${currentCycle}`;
             const cycleData = thresholdData.standard_cycles?.[cycleKey];
             console.log(`🔍 Cycle data for ${cycleKey}:`, cycleData ? 'Found' : 'Not found');
-            
+
             if (cycleData) {
                 // Use actual values from processed_cycles.json without fallback to 0.1
                 maxProduction = cycleData.max_production || 0;
-                
+
                 // Set threshold as 70% of max production capacity (same as crop details)
                 threshold = maxProduction * 0.7;
-                
+
                 console.log(`✅ Map threshold data - Max: ${maxProduction}, Threshold: ${threshold}`);
             } else {
                 console.log(`⚠️ No cycle data found for ${cycleKey}`);
@@ -2382,19 +2382,19 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
         } else {
             console.log(`❌ No threshold data available for ${crop} in ${clickedDistrict}`);
         }
-        
+
         const actualProduction = Math.max(
             farmerProduction[0]?.totalProduction || 0,
             regionProduction[0]?.totalProduction || 0
         );
-        
+
         const farmerCount = farmerProduction[0]?.farmerCount || 0;
         const avgYield = farmerProduction[0]?.avgYield || 0;
-        
+
         // Calculate threshold status
         const thresholdPercentage = threshold > 0 ? Math.min((actualProduction / threshold) * 100, 100) : 0;
         const status = actualProduction >= threshold ? 'Above Threshold' : 'Below Threshold';
-        
+
         return res.json({
             success: true,
             crop: cropName,
@@ -2419,12 +2419,71 @@ app.get('/api/region-data/:lat/:lng/:cropName', authenticateToken, async (req, r
             season: currentSeason,
             cycle: currentCycle
         });
-        
+
     } catch (err) {
         console.error('❌ Region data API error:', err);
         return res.status(500).json({
             error: 'Failed to get region data',
             details: err.message
+        });
+    }
+});
+
+// Fertilizer Prediction API
+app.post('/api/fertilizer-prediction', authenticateToken, async (req, res) => {
+    try {
+        const { crop_type, moisture, nitrogen, potassium, phosphorous } = req.body;
+
+        // Validate input
+        if (!crop_type || moisture == null || nitrogen == null || potassium == null || phosphorous == null) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required parameters: crop_type, moisture, nitrogen, potassium, phosphorous'
+            });
+        }
+
+        // Call the Python Flask API for fertilizer prediction
+        const FERTILIZER_API_URL = process.env.FERTILIZER_API_URL || 'http://localhost:5002/predict';
+
+        const response = await axios.post(FERTILIZER_API_URL, {
+            crop_type: crop_type,
+            moisture: parseFloat(moisture),
+            nitrogen: parseFloat(nitrogen),
+            potassium: parseFloat(potassium),
+            phosphorous: parseFloat(phosphorous)
+        }, {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            timeout: 10000 // 10 second timeout
+        });
+
+        if (response.data && response.data.prediction) {
+            return res.json({
+                success: true,
+                prediction: response.data.prediction,
+                message: 'Fertilizer recommendation generated successfully'
+            });
+        } else {
+            return res.status(500).json({
+                success: false,
+                message: 'Invalid response from fertilizer prediction service'
+            });
+        }
+    } catch (err) {
+        console.error('Fertilizer prediction error:', err);
+
+        if (err.code === 'ECONNREFUSED') {
+            return res.status(503).json({
+                success: false,
+                message: 'Fertilizer prediction service is not available. Please ensure the Python API is running.'
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to get fertilizer prediction',
+            error: err.message
         });
     }
 });

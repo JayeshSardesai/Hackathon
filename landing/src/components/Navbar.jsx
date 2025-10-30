@@ -35,6 +35,9 @@ export default function Navbar() {
           <button onClick={() => navigate('/select-crop')} className="text-foreground hover:text-farm-green-600 transition-colors font-medium font-poppins">
             <T k="dashboard.selectCrop">Select Crop</T>
           </button>
+          <button onClick={() => navigate('/fertilizer-predictor')} className="text-foreground hover:text-farm-green-600 transition-colors font-medium font-poppins">
+            <T k="dashboard.fertilizerPredictor">Fertilizer Predictor</T>
+          </button>
           <button onClick={() => navigate('/profile')} className="text-foreground hover:text-farm-green-600 transition-colors font-medium font-poppins">
             <T k="dashboard.profile">Profile</T>
           </button>
@@ -59,6 +62,9 @@ export default function Navbar() {
             </button>
             <button onClick={() => { navigate('/select-crop'); setIsMenuOpen(false); }} className="block w-full text-left py-2 text-foreground hover:text-farm-green-600 font-poppins">
               <T k="dashboard.selectCrop">Select Crop</T>
+            </button>
+            <button onClick={() => { navigate('/fertilizer-predictor'); setIsMenuOpen(false); }} className="block w-full text-left py-2 text-foreground hover:text-farm-green-600 font-poppins">
+              <T k="dashboard.fertilizerPredictor">Fertilizer Predictor</T>
             </button>
             <button onClick={() => { navigate('/profile'); setIsMenuOpen(false); }} className="block w-full text-left py-2 text-foreground hover:text-farm-green-600 font-poppins">
               <T k="dashboard.profile">Profile</T>

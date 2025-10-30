@@ -8,6 +8,7 @@ import SelectCrop from './components/SelectCrop';
 import CropPrediction from './components/CropPrediction';
 import YieldEstimation from './components/YieldEstimation';
 import CropDetails from './components/CropDetails';
+import FertilizerPredictor from './components/FertilizerPredictor';
 function App() {
   return (
     <Router>
@@ -21,7 +22,7 @@ function App() {
         <Route path="/crop-prediction" element={<CropPrediction />} />
         <Route path="/yield-estimation" element={<YieldEstimation />} />
         <Route path="/crop-details/:cropName" element={<CropDetails />} />
-        
+        <Route path="/fertilizer-predictor" element={<FertilizerPredictor />} />
       </Routes>
     </Router>
   );
