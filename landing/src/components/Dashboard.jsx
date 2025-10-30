@@ -623,6 +623,9 @@ const Dashboard = () => {
             <button onClick={() => navigate('/select-crop')} className="text-foreground hover:text-farm-green-600 transition-colors font-medium font-poppins">
               <T k="dashboard.selectCrop">Select Crop</T>
             </button>
+            <button onClick={() => navigate('/fertilizer-predictor')} className="text-foreground hover:text-farm-green-600 transition-colors font-medium font-poppins">
+              <T k="dashboard.fertilizerPredictor">Fertilizer Predictor</T>
+            </button>
             <LanguageSwitcher inline={true} className="ml-2" />
 
             {/* Profile Section in Right Upper Corner */}
@@ -735,6 +738,9 @@ const Dashboard = () => {
             </button>
             <button onClick={() => { navigate('/select-crop'); setIsMenuOpen(false); }} className="block w-full text-left py-2 text-foreground hover:text-farm-green-600 font-poppins">
               <T k="dashboard.selectCrop">Select Crop</T>
+            </button>
+            <button onClick={() => { navigate('/fertilizer-predictor'); setIsMenuOpen(false); }} className="block w-full text-left py-2 text-foreground hover:text-farm-green-600 font-poppins">
+              <T k="dashboard.fertilizerPredictor">Fertilizer Predictor</T>
             </button>
             <button onClick={() => { navigate('/profile'); setIsMenuOpen(false); }} className="block w-full text-left py-2 text-foreground hover:text-farm-green-600 font-poppins">
               <T k="dashboard.profile">Profile</T> ({user.name})
@@ -948,8 +954,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-          {/* Crop Recommendation & Yield Estimation Cards (Last) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 mb-8">
+          {/* Crop Recommendation, Yield Estimation & Fertilizer Predictor Cards (Last) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8 mb-8">
             {/* Crop Recommendation Card */}
             <a href={`http://127.0.0.1:5001/?lang=${encodeURIComponent(i18n.resolvedLanguage || i18n.language || 'en')}`} className="farm-card p-6 hover:shadow-xl transition-all duration-300 block">
               <div className="flex items-center space-x-2 mb-2">
@@ -973,6 +979,18 @@ const Dashboard = () => {
                 <T k="dashboard.estimateNow">Estimate now</T> <i data-lucide="arrow-right" className="h-4 w-4 ml-1"></i>
               </div>
             </a>
+
+            {/* Fertilizer Predictor Card */}
+            <button onClick={() => navigate('/fertilizer-predictor')} className="farm-card p-6 hover:shadow-xl transition-all duration-300 block text-left w-full">
+              <div className="flex items-center space-x-2 mb-2">
+                <i data-lucide="flask-conical" className="h-5 w-5 text-blue-600"></i>
+                <h3 className="font-semibold text-blue-700 font-poppins"><T k="dashboard.fertilizerRecommendation">Fertilizer Recommendation</T></h3>
+              </div>
+              <p className="text-sm text-muted-600 font-poppins"><T k="dashboard.getFertilizerAdvice">Get personalized fertilizer recommendations based on your soil and crop data</T></p>
+              <div className="mt-4 text-blue-600 flex items-center font-poppins">
+                <T k="dashboard.checkFertilizer">Check Fertilizer</T> <i data-lucide="arrow-right" className="h-4 w-4 ml-1"></i>
+              </div>
+            </button>
         </div>
       </main>
 
