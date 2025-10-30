@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Crop Prediction | FarmFlow</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --farm-green-500: #4CAF50;
+            --farm-green-600: #388E3C;
+            --farm-green-700: #2E7D32;
+            --earth-brown-950: #8D6E63;
+            --golden-yellow-500: #FBC02D;
+            --soft-beige-950: #FAF3E0;
+            --soft-beige-200: #E8DCC0;
+            --soft-beige-300: #D4C4A3;
+        }
+        
+        body {
+            background: var(--soft-beige-950);
+            font-family: 'Roboto', 'Open Sans', sans-serif;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ff-navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            width: 100%;
+            backdrop-filter: blur(6px);
+            background: rgba(255,255,255,0.95);
+            border-bottom: 1px solid var(--soft-beige-200);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+        .ff-navbar .brand {
+            font-weight: 700;
+            color: var(--farm-green-700);
+        }
+        .ff-navbar a { text-decoration: none; color: #1f2937; }
+        .ff-navbar a:hover { color: var(--farm-green-600); }
+        
+        .card {
+            border-radius: 20px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+            border: 1px solid var(--soft-beige-200);
+            background: var(--soft-beige-950);
+            max-width: 720px;
+        }
+        
+        h2 {
+            font-weight: bold;
+            color: var(--farm-green-700);
+        }
+        
+        .result {
+            margin-top: 20px;
+        }
+        
+        .list-group-item {
+            font-size: 1.1rem;
+            border-color: var(--soft-beige-200);
+        }
+        
+        .form-control, .form-select {
+            border: 1px solid var(--soft-beige-300);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background-color: #fff;
+            padding: 10px 12px;
+        }
+        
+        .form-control:hover, .form-select:hover {
+            border-color: var(--soft-beige-200);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--farm-green-500);
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+            outline: none;
+        }
+
+        .form-control::placeholder {
+            color: #9aa1a9;
+            opacity: 1;
+        }
+
+        label.form-label {
+            font-weight: 600;
+            color: var(--farm-green-700);
+        }
+
+        .is-invalid {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+        }
+        
+        .btn-primary {
+            background: var(--farm-green-500);
+            border-color: var(--farm-green-500);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: var(--farm-green-600);
+            border-color: var(--farm-green-600);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+        
+        .text-success {
+            color: var(--farm-green-600) !important;
+        }
+        
+        .badge.bg-primary {
+            background: var(--farm-green-500) !important;
+        }
+        
+        .ai-badge {
+            background: var(--golden-yellow-500);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+    </style>
+    </style>
+    <script>
+      // Simple client-side i18n using localStorage language (synced with React app)
+      const I18N = {
+        en: {
+          back: '← Back to Dashboard',
+          aiBadge: '🤖 AI-Powered',
+          title: '🌾 FarmFlow Crop Prediction System',
+          subtitle: 'Intelligent crop recommendations based on soil and climate analysis',
+          soilPh: 'Soil pH',
+          temp: 'Temperature (°C)',
+          rh: 'Relative Humidity (%)',
+          n: 'Nitrogen (N)',
+          p: 'Phosphorus (P)',
+          k: 'Potassium (K)',
+          soilType: 'Soil Type',
+          selectSoil: 'Select soil type',
+          season: 'Season',
+          selectSeason: 'Select season',
+          seasons: { Kharif: 'Kharif', Rabi: 'Rabi', Zaid: 'Zaid' },
+          predict: '🚀 Get AI Prediction',
+          recommended: '✅ AI Recommended Crop:',
+          top5: 'Top 5 AI Predictions:',
+          confidence: 'AI Confidence: These predictions are based on machine learning analysis of thousands of farming datasets.',
+          brand: 'FarmFlow',
+          page: 'Crop Prediction',
+          soilOptions: {
+            'Loamy soil': 'Loamy soil',
+            'Alluvial soil': 'Alluvial soil',
+            'Laterite soil': 'Laterite soil',
+            'Sandy soil': 'Sandy soil',
+            'Sandy Loamy soil': 'Sandy Loamy soil',
+            'Light Loamy soil': 'Light Loamy soil',
+            'Well-drained soil': 'Well-drained soil',
+            'Well-drained loamy soil': 'Well-drained loamy soil'
+          }
+        },
+        hi: {
+          back: '← डैशबोर्ड पर वापस',
+          aiBadge: '🤖 एआई-संचालित',
+          title: '🌾 FarmFlow फसल पूर्वानुमान प्रणाली',
+          subtitle: 'मिट्टी और जलवायु विश्लेषण के आधार पर बुद्धिमान फसल सुझाव',
+          soilPh: 'मिट्टी का pH',
+          temp: 'तापमान (°C)',
+          rh: 'सापेक्ष आर्द्रता (%)',
+          n: 'नाइट्रोजन (N)',
+          p: 'फास्फोरस (P)',
+          k: 'पोटेशियम (K)',
+          soilType: 'मिट्टी का प्रकार',
+          selectSoil: 'मिट्टी का प्रकार चुनें',
+          season: 'मौसम',
+          selectSeason: 'मौसम चुनें',
+          seasons: { Kharif: 'खरीफ', Rabi: 'रबी', Zaid: 'जायद' },
+          predict: '🚀 एआई पूर्वानुमान प्राप्त करें',
+          recommended: '✅ एआई अनुशंसित फसल:',
+          top5: 'शीर्ष 5 एआई पूर्वानुमान:',
+          confidence: 'एआई भरोसा: ये पूर्वानुमान हजारों कृषि डेटासेट के मशीन लर्निंग विश्लेषण पर आधारित हैं।',
+          brand: 'FarmFlow',
+          page: 'फसल पूर्वानुमान',
+          soilOptions: {
+            'Loamy soil': 'दोमट मिट्टी',
+            'Alluvial soil': 'जलोढ़ मिट्टी',
+            'Laterite soil': 'लेटराइट मिट्टी',
+            'Sandy soil': 'बालुई मिट्टी',
+            'Sandy Loamy soil': 'रेतीली दोमट मिट्टी',
+            'Light Loamy soil': 'हल्की दोमट मिट्टी',
+            'Well-drained soil': 'अच्छी जल निकासी वाली मिट्टी',
+            'Well-drained loamy soil': 'अच्छी जल निकासी वाली दोमट मिट्टी'
+          }
+        },
+        kn: {
+          back: '← ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ',
+          aiBadge: '🤖 ಎಐ-ಚಾಲಿತ',
+          title: '🌾 FarmFlow ಬೆಳೆ ಭವಿಷ್ಯವಾಣಿ ವ್ಯವಸ್ಥೆ',
+          subtitle: 'ಮಣ್ಣು ಮತ್ತು ಹವಾಮಾನ ವಿಶ್ಲೇಷಣೆ ಆಧಾರಿತ ಬುದ್ಧಿವಂತ ಬೆಳೆ ಸಲಹೆಗಳು',
+          soilPh: 'ಮಣ್ಣಿನ pH',
+          temp: 'ತಾಪಮಾನ (°C)',
+          rh: 'ಸಾಪೇಕ್ಷ ಆರ್ದ್ರತೆ (%)',
+          n: 'ನೈಟ್ರೋಜನ್ (N)',
+          p: 'ಫಾಸ್ಫರಸ್ (P)',
+          k: 'ಪೊಟ್ಯಾಸಿಯಮ್ (K)',
+          soilType: 'ಮಣ್ಣಿನ ಪ್ರಕಾರ',
+          selectSoil: 'ಮಣ್ಣಿನ ಪ್ರಕಾರ ಆಯ್ಕೆಮಾಡಿ',
+          season: 'ಋತು',
+          selectSeason: 'ಋತುವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+          seasons: { Kharif: 'ಖರೀಫ್', Rabi: 'ರಬಿ', Zaid: 'ಜೈದ್' },
+          predict: '🚀 ಎಐ ಭವಿಷ್ಯವಾಣಿ ಪಡೆಯಿರಿ',
+          recommended: '✅ ಎಐ ಶಿಫಾರಸಾದ ಬೆಳೆ:',
+          top5: 'ಟಾಪ್ 5 ಎಐ ಭವಿಷ್ಯವಾಣಿ:',
+          confidence: 'ಎಐ ವಿಶ್ವಾಸ: ಈ ಭವಿಷ್ಯವಾಣಿಗಳು ಸಾವಿರಾರು ಕೃಷಿ ಡೇಟಾಸೆಟ್‌ಗಳ ಯಂತ್ರ ಕಲಿಕೆ ವಿಶ್ಲೇಷಣೆಯ ಆಧಾರಿತವಾಗಿವೆ.',
+          brand: 'FarmFlow',
+          page: 'ಬೆಳೆ ಭವಿಷ್ಯವಾಣಿ',
+          soilOptions: {
+            'Loamy soil': 'ದೋಮಟ ಮಣ್ಣು',
+            'Alluvial soil': 'ಅಲ್ಲುವಿಯಲ್ ಮಣ್ಣು',
+            'Laterite soil': 'ಲೇಟರೈಟ್ ಮಣ್ಣು',
+            'Sandy soil': 'ಮರಳು ಮಣ್ಣು',
+            'Sandy Loamy soil': 'ಮರಳು ದೋಮಟ ಮಣ್ಣು',
+            'Light Loamy soil': 'ಹಗುರ ದೋಮಟ ಮಣ್ಣು',
+            'Well-drained soil': 'ಉತ್ತಮ ನೀರು ಹರಿವ ಮಣ್ಣು',
+            'Well-drained loamy soil': 'ಉತ್ತಮ ನೀರು ಹರಿವ ದೋಮಟ ಮಣ್ಣು'
+          }
+        },
+        mr: {
+          back: '← डॅशबोर्डवर परत',
+          aiBadge: '🤖 एआय-संचालित',
+          title: '🌾 FarmFlow पीक भविष्यवाणी प्रणाली',
+          subtitle: 'माती आणि हवामान विश्लेषणावर आधारित बुद्धिमान पीक सूचना',
+          soilPh: 'मातीचे pH',
+          temp: 'तापमान (°C)',
+          rh: 'सापेक्ष आर्द्रता (%)',
+          n: 'नायट्रोजन (N)',
+          p: 'फॉस्फरस (P)',
+          k: 'पोटॅशियम (K)',
+          soilType: 'मातीचा प्रकार',
+          selectSoil: 'मातीचा प्रकार निवडा',
+          season: 'हंगाम',
+          selectSeason: 'हंगाम निवडा',
+          seasons: { Kharif: 'खरीप', Rabi: 'रब्बी', Zaid: 'जायद' },
+          predict: '🚀 एआय भविष्यवाणी मिळवा',
+          recommended: '✅ एआय शिफारस केलेले पीक:',
+          top5: 'टॉप 5 एआय भविष्यवाणी:',
+          confidence: 'एआय विश्वास: या भविष्यवाण्या हजारो कृषी डेटासेटच्या मशीन लर्निंग विश्लेषणावर आधारित आहेत.',
+          brand: 'FarmFlow',
+          page: 'पीक भविष्यवाणी',
+          soilOptions: {
+            'Loamy soil': 'दोमट माती',
+            'Alluvial soil': 'आलुवियल माती',
+            'Laterite soil': 'लेटराइट माती',
+            'Sandy soil': 'वालुकामय माती',
+            'Sandy Loamy soil': 'वालुकामय दोमट माती',
+            'Light Loamy soil': 'हलकी दोमट माती',
+            'Well-drained soil': 'चांगली निचरा होणारी माती',
+            'Well-drained loamy soil': 'चांगली निचरा होणारी दोमट माती'
+          }
+        }
+      };
+      function getLang(){
+        try { return localStorage.getItem('i18nextLng') || 'en'; } catch(e){ return 'en'; }
+      }
+      function t(key){
+        const lang = getLang();
+        const dict = I18N[lang] || I18N.en;
+        return key.split('.').reduce((o,k)=> (o||{})[k], dict) || (I18N.en[key] || key);
+      }
+      function applyI18n(){
+        document.querySelectorAll('[data-i18n]').forEach(el=>{
+          const key = el.getAttribute('data-i18n');
+          const txt = t(key);
+          el.textContent = txt;
+        });
+        // seasons
+        document.querySelectorAll('[data-i18n-season]').forEach(el=>{
+          const val = el.getAttribute('data-value');
+          el.textContent = t('seasons.'+val) || val;
+        });
+        // soil options
+        document.querySelectorAll('[data-i18n-soil]').forEach(el=>{
+          const val = el.getAttribute('data-value');
+          const d = I18N[getLang()] || I18N.en;
+          const label = (d.soilOptions && d.soilOptions[val]) || (I18N.en.soilOptions && I18N.en.soilOptions[val]) || val;
+          el.textContent = label;
+        });
+        // placeholders
+        const ph = document.querySelectorAll('[data-i18n-ph]');
+        ph.forEach(el=>{
+          const key = el.getAttribute('data-i18n-ph');
+          el.setAttribute('placeholder', t(key));
+        });
+      }
+      document.addEventListener('DOMContentLoaded', applyI18n);
+    </script>
+</head>
+<body>
+    <!-- Navbar -->
+    <div class="ff-navbar">
+      <div class="container py-2 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <span class="brand">🌱 <span data-i18n="brand">FarmFlow</span></span>
+          <span class="text-muted">|</span>
+          <span class="text-muted" data-i18n="page">Crop Prediction</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <select id="langSelect" class="form-select form-select-sm" style="width:auto">
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="kn">ಕನ್ನಡ</option>
+            <option value="mr">मराठी</option>
+          </select>
+          <a href="http://localhost:5173/dashboard" class="btn btn-outline-secondary btn-sm" data-i18n="back">← Back to Dashboard</a>
+        </div>
+      </div>
+    </div>
+    <script>
+      // sync dropdown with stored lang and update on change
+      (function(){
+        // If ?lang=xx present, set localStorage for cross-origin sync
+        const params = new URLSearchParams(location.search);
+        const paramLang = params.get('lang');
+        if (paramLang && ['en','hi','kn','mr'].includes(paramLang)) {
+          try { localStorage.setItem('i18nextLng', paramLang); } catch(e) {}
+        }
+        const sel = document.getElementById('langSelect');
+        const current = paramLang || getLang();
+        sel.value = current;
+        sel.addEventListener('change', function(){
+          try { localStorage.setItem('i18nextLng', this.value); } catch(e){}
+          applyI18n();
+        });
+        // Apply after possible param override
+        applyI18n();
+      })();
+    </script>
+
+    <div class="container my-4 flex-grow-1 d-flex align-items-start justify-content-center">
+        <div class="card p-4 mx-auto w-100">
+            <div class="text-center mb-4">
+                <div class="ai-badge" data-i18n="aiBadge">🤖 AI-Powered</div>
+                <h2 class="mb-2" data-i18n="title">🌾 FarmFlow Crop Prediction System</h2>
+                <p class="text-muted" data-i18n="subtitle">Intelligent crop recommendations based on soil and climate analysis</p>
+            </div>
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label" data-i18n="soilPh">Soil pH</label>
+                    <input type="number" step="0.01" name="SOIL_PH" class="form-control" data-i18n-ph="soilPh" placeholder="e.g., 6.5" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" data-i18n="temp">Temperature (°C)</label>
+                    <input type="number" step="0.1" name="TEMP" class="form-control" placeholder="e.g., 28.5" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" data-i18n="rh">Relative Humidity (%)</label>
+                    <input type="number" step="0.1" name="RELATIVE_HUMIDITY" class="form-control" placeholder="e.g., 62.0" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" data-i18n="n">Nitrogen (N)</label>
+                    <input type="number" name="N" class="form-control" placeholder="e.g., 90" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" data-i18n="p">Phosphorus (P)</label>
+                    <input type="number" name="P" class="form-control" placeholder="e.g., 42" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" data-i18n="k">Potassium (K)</label>
+                    <input type="number" name="K" class="form-control" placeholder="e.g., 35" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" data-i18n="soilType">Soil Type</label>
+                    <select name="SOIL" class="form-select" required>
+                        <option value="" data-i18n="selectSoil">Select soil type</option>
+                        <option data-i18n-soil data-value="Loamy soil" value="Loamy soil">Loamy soil</option>
+                        <option data-i18n-soil data-value="Alluvial soil" value="Alluvial soil">Alluvial soil</option>
+                        <option data-i18n-soil data-value="Laterite soil" value="Laterite soil">Laterite soil</option>
+                        <option data-i18n-soil data-value="Sandy soil" value="Sandy soil">Sandy soil</option>
+                        <option data-i18n-soil data-value="Sandy Loamy soil" value="Sandy Loamy soil">Sandy Loamy soil</option>
+                        <option data-i18n-soil data-value="Light Loamy soil" value="Light Loamy soil">Light Loamy soil</option>
+                        <option data-i18n-soil data-value="Well-drained soil" value="Well-drained soil">Well-drained soil</option>
+                        <option data-i18n-soil data-value="Well-drained loamy soil" value="Well-drained loamy soil">Well-drained loamy soil</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" data-i18n="season">Season</label>
+                    <select name="SEASON" class="form-select" required>
+                        <option value="" data-i18n="selectSeason">Select season</option>
+                        <option value="Kharif" data-i18n-season data-value="Kharif">Kharif</option>
+                        <option value="Rabi" data-i18n-season data-value="Rabi">Rabi</option>
+                        <option value="Zaid" data-i18n-season data-value="Zaid">Zaid</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100" data-i18n="predict">🚀 Get AI Prediction</button>
+            </form>
+
+            {% if prediction %}
+            <div class="result mt-4">
+                <h4 class="text-success"><span data-i18n="recommended">✅ AI Recommended Crop:</span> {{ prediction }}</h4>
+                <p class="text-muted mb-3" data-i18n="subtitle">Based on your input parameters, our AI model suggests this crop for optimal yield</p>
+                <h5 class="mt-3" data-i18n="top5">Top 5 AI Predictions:</h5>
+                <ul class="list-group">
+                    {% for crop, prob in top_crops.items() %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ crop }}
+                            <span class="badge bg-primary rounded-pill">{{ prob }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <div class="mt-3 p-3 bg-light rounded">
+                    <small class="text-muted" data-i18n="confidence">
+                        <strong>AI Confidence:</strong> These predictions are based on machine learning analysis of thousands of farming datasets.
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
