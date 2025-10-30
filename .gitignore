@@ -1,0 +1,15 @@
+# Dependencies
+/Backend/node_modules
+/landing/node_modules
+
+# Environment variables
+.env
+/Backend/.env
+/landing/.env
+
+# Build output
+/landing/dist
+
+# OS-specific
+.DS_Store
+Thumbs.db
