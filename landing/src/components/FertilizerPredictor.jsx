@@ -28,16 +28,34 @@ const FertilizerPredictor = () => {
     phosphorous: ''
   });
 
-  // Available crop types for fertilizer prediction
-  const cropTypes = [
+  // Available crop types for fertilizer prediction (will be loaded from API)
+  const [cropTypes, setCropTypes] = useState([
     'Wheat', 'Rice', 'Maize', 'Cotton', 'Sugarcane', 'Barley',
     'Groundnut', 'Soybean', 'Sunflower', 'Potato', 'Tomato',
     'Onion', 'Cabbage', 'Cauliflower', 'Brinjal', 'Chilli'
-  ];
+  ]);
 
   useEffect(() => {
     checkAuthentication();
+    fetchAvailableCrops();
   }, []);
+
+  const fetchAvailableCrops = async () => {
+    try {
+      const response = await fetch('http://localhost:5002/crops');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.available_crops && data.available_crops.length > 0) {
+          setCropTypes(data.available_crops);
+          console.log('✅ Loaded available crops from API:', data.available_crops);
+        }
+      } else {
+        console.log('⚠️ Could not fetch crops from API, using default list');
+      }
+    } catch (error) {
+      console.log('⚠️ Error fetching crops from API, using default list:', error);
+    }
+  };
 
   const checkAuthentication = () => {
     const token = localStorage.getItem('token');
@@ -169,7 +187,13 @@ const FertilizerPredictor = () => {
       if (response.ok && data.success) {
         setPrediction(data.prediction);
       } else {
-        setError(data.message || 'Failed to get fertilizer prediction');
+        // Handle different types of errors
+        if (data.available_crops) {
+          setError(`${data.message}\nSupported crops: ${data.available_crops.join(', ')}`);
+        } else {
+          setError(data.message || data.error || 'Failed to get fertilizer prediction');
+        }
+        console.error('API Error:', data);
       }
     } catch (err) {
       console.error('Prediction error:', err);
