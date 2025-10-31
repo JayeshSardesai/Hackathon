@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import T from './T';
 import LanguageSwitcher from './LanguageSwitcher';
 import WeatherApp from './WeatherApp';
+import { Menu, X, Leaf, Sun, Sprout, Target, MapPin, Lightbulb, BarChart2, Plus, RefreshCw, ArrowRight, Droplet } from 'lucide-react';
+
 import OptimizedMap from './OptimizedMap';
 import locationService from '../services/locationService';
 import { getCropLabelFromName, SUPPORTED_CROPS } from '../constants/crops';
@@ -991,6 +993,20 @@ const Dashboard = () => {
                 <T k="dashboard.checkFertilizer">Check Fertilizer</T> <i data-lucide="arrow-right" className="h-4 w-4 ml-1"></i>
               </div>
             </button>
+            <div
+                        onClick={() => navigate('/plant-watering')}
+                        className="farm-card p-6 hover:shadow-xl transition-all duration-300 block cursor-pointer"
+                      >
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Droplet className="h-5 w-5 text-blue-600" />
+                          <h3 className="font-semibold text-blue-700 font-poppins">{t('dashboard.plantWatering', 'Plant Watering')}</h3>
+                        </div>
+                        <p className="text-sm text-gray-500 font-poppins">{t('dashboard.waterRequirement', 'Predict water requirements')}</p>
+                        <div className="mt-4 text-blue-600 flex items-center font-poppins">
+                          {t('dashboard.checkNow', 'Check now')} <ArrowRight className="h-4 w-4 ml-1" />
+                        </div>
+                      </div>
+            
         </div>
       </main>
 

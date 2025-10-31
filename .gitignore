@@ -3,9 +3,9 @@
 /landing/node_modules
 
 # Environment variables
-.env
-/Backend/.env
-/landing/.env
+# .env
+# /Backend/.env
+# /landing/.env
 
 # Build output
 /landing/dist

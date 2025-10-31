@@ -111,9 +111,12 @@ const RegionProduction = mongoose.model('RegionProduction', new mongoose.Schema(
 
 // Middleware
 app.use(cors({
-    origin: 'http://localhost:5173', // React dev server
+    origin:  'https://majorfarmflow.netlify.app'||
+    'http://localhost:5173'||
+    'http://localhost:3000',// React dev server
     credentials: true
 }));
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(session({
@@ -808,6 +811,24 @@ app.post('/api/location', async (req, res) => {
             error: 'Failed to determine location',
             details: err.message
         });
+    }
+});
+
+// 3. New route for Plant Watering Prediction
+app.post('/api/plant-watering', authenticateToken, async (req, res) => {
+    try {
+        const mlApiUrl = process.env.ML_API_URL || 'http://localhost:5001';
+        console.log('Proxying request to ML service for plant watering prediction...');
+        console.log('ML_API_URL:', mlApiUrl);
+        console.log('Request body:', req.body);
+        
+        // Forward the request body from the React app to the Python ML API
+        const response = await axios.post(`${mlApiUrl}/api/predict-watering`, req.body);
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error proxying to ML service for watering:', error.message);
+        console.error('Full error:', error);
+        res.status(500).json({ error: 'Error getting watering prediction', details: error.message });
     }
 });
 
