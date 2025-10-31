@@ -1,0 +1,9 @@
+Flask
+Flask-Cors
+gunicorn
+pandas
+numpy
+scikit-learn==1.6.1
+xgboost
+requests
+python-dotenv

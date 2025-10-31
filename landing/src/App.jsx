@@ -18,6 +18,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/plant-watering" element={<PlantWatering />} />
         <Route path="/select-crop" element={<SelectCrop />} />
         <Route path="/crop-prediction" element={<CropPrediction />} />
         <Route path="/yield-estimation" element={<YieldEstimation />} />
